@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="estilo_de_los_index.css">
+    <title>Plano del Salón</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            background-color: #f8eec3;
+            margin-top: 20px;
+        }
+        .input-container {
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 600px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px; /* Ajustar la altura según sea necesario */
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            margin: 5px;
+	text-decoration: none;
+	padding: 10px 40px;
+	border-radius: 10px;
+    background-color: aqua;
+    font-size: 16px;
+    margin-top: 10px;
+    float: none;
+        }
+        button:hover {
+            background-color: #008CBA; /* Azul */
+            transition: all 1.0s ease;
+        }
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            flex-direction: column;
+            align-items: center;
+        }
+        .instructions {
+            margin-bottom: 20px;
+        }
+        .notification {
+            display: none;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body bgcolor="#f9ed6c">
+    <h1>Plano del Salón</h1>
+    <div class="input-container">
+       <div class="css">
+        <div class="form-group">
+            <label for="studentData">Ingrese el nombre y coordenadas del compañero (formato: Nombre,x,y):</label>
+            <textarea id="studentData" class="form-control" placeholder="Ejemplo: Juan,2,3\nMaría,4,5"></textarea>
+        </div>
+       <center><button onclick="addStudent()">Agregar Compañero</button></center>
+        <br>
+        <center><button onclick="saveToExcel()">Guardar en Excel</button></center>
+        <br>
+        <center><input type="file" id="fileUpload" accept=".xlsx, .xls" />
+       <button onclick="loadFromExcel()">Cargar desde Excel</button></center> 
+    </div>
+    <div id="notification" class="notification alert alert-success" role="alert">
+        Compañero agregado exitosamente.
+     </div>
+    </div>
+    <canvas id="salonCanvas" width="840" height="500"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script>
+         const svgIcon = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="black" stroke-width="2"/>
+                <circle cx="12" cy="8" r="3" fill="black"/>
+                <path d="M12 11C9 11 8 15 8 15H16C16 15 15 11 12 11Z" fill="black"/>
+                <path d="M9 15L8 20" stroke="black" stroke-width="2"/>
+                <path d="M15 15L16 20" stroke="black" stroke-width="2"/>
+                <path d="M9 20H15" stroke="black" stroke-width="2"/>
+            </svg>
+        `;
+        let students = [];
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.innerText = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function addStudent() {
+            const studentData = document.getElementById('studentData').value.trim();
+            const studentEntries = studentData.split('\n');
+
+            studentEntries.forEach(entry => {
+                const [nombre, x, y] = entry.split(',');
+
+                if (nombre && !isNaN(x) && !isNaN(y)) {
+                    students.push({ nombre, x: parseInt(x), y: parseInt(y) });
+                } else {
+                    alert("Por favor, ingrese los datos en el formato correcto: Nombre,x,y");
+                }
+            });
+
+            generatePlan(students);
+            document.getElementById('studentData').value = '';
+        }
+
+        function generatePlan(students) {
+            const canvas = document.getElementById('salonCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Dimensiones del salón
+            const width = canvas.width;
+            const height = canvas.height;
+            const scale = 40; // 1 cuadro = 40 píxeles
+
+            // Dibujar el salón como un rectángulo
+            ctx.strokeRect(0, 0, width, height);
+
+            // Dibujar las medidas del salón
+            ctx.font = '16px Arial';
+            ctx.fillStyle = 'black';
+            ctx.fillText(`9.60m`, width / 2 - 20, height - 10);
+            ctx.fillText(`9.60m`, 10, height / 2 + 5);
+
+            // Espacios desde las paredes
+            const leftMargin = 0.3 * scale; // 30 cm
+            const rightMargin = 1 * scale; // 1 metro
+
+            
+// Dibujar la silla azul
+const sillaazulrCoords = [
+                { x: 7, y: 2 },
+            ];
+            ctx.fillStyle = 'blue';
+            sillaazulrCoords.forEach(coord => {
+                const xPos = coord.x * scale;
+                const yPos = coord.y * scale;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                ctx.fillText('silla azul', xPos + 10, yPos + 10); // ajustar la posición del texto
+            });
+              // Dibujar la botellon
+              const botellonCoords = [
+                { x: 18, y: 12 },
+            ];
+            ctx.fillStyle = 'blue';
+            botellonCoords.forEach(coord => {
+                const xPos = coord.x * scale;
+                const yPos = coord.y * scale;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                ctx.fillText('botellon', xPos + 10, yPos + 10); // ajustar la posición del texto
+            });
+
+            // Dibujar la maestra
+            const teacherCoords = [
+                { x: 16, y: 9 },
+                { x: 16, y: 10 }
+            ];
+            ctx.fillStyle = 'blue';
+            teacherCoords.forEach(coord => {
+                const xPos = coord.x * scale;
+                const yPos = coord.y * scale;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                ctx.fillText('Maestra', xPos + 10, yPos + 10); // ajustar la posición del texto
+            });
+              // Dibujar la tele
+              const tvCoords = [
+                { x: 18, y: 7 },
+            ];
+            ctx.fillStyle = 'blue';
+            tvCoords.forEach(coord => {
+                const xPos = coord.x * scale;
+                const yPos = coord.y * scale;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                ctx.fillText('TV', xPos + 10, yPos + 10); // ajustar la posición del texto
+            });
+             // Dibujar la puerta
+             const puertaCoords = [
+                { x:  0, y: 0 },
+                { x:  1, y: 0 },
+                { x:  2, y:0  }
+            ];
+            ctx.fillStyle = 'blue';
+            puertaCoords.forEach(coord => {
+                const xPos = coord.x * scale;
+                const yPos = coord.y * scale;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                ctx.fillText('puerta', xPos + 10, yPos + 10); // ajustar la posición del texto
+            });
+              // Dibujar la pisaron
+              const pisaronCoords = [
+                { x: 19, y: 7 },
+                { x: 19, y: 5 },
+                { x:19,  y:6  }
+            ];
+            ctx.fillStyle = 'red';
+            pisaronCoords.forEach(coord => {
+                const xPos = coord.x * scale;
+                const yPos = coord.y * scale;
+                ctx.beginPath();
+                ctx.arc(xPos, yPos, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                ctx.fillText('pisaron', xPos + 10, yPos + 10); // ajustar la posición del texto
+            });
+
+             // Dibujar los compañeros como íconos en el plano y añadir etiquetas
+             students.forEach(student => {
+                const { nombre, x, y } = student;
+                const xPos = parseInt(x) * scale + leftMargin; // convertir cuadros a píxeles y aplicar margen
+                const yPos = parseInt(y) * scale; // convertir cuadros a píxeles
+                if (xPos < width - rightMargin && yPos < height) { // Verificar que el punto está dentro del canvas
+                    const img = new Image();
+                    const svg = new Blob([svgIcon], { type: 'image/svg+xml;charset=utf-8' });
+                    const url = URL.createObjectURL(svg);
+                    img.src = url;
+                    img.onload = () => {
+                        ctx.drawImage(img, xPos - 12, yPos - 12, 24, 24); // dibujar el ícono del muñeco
+                        ctx.font = '14px Arial'; // aumentar el tamaño de la fuente
+                        ctx.fillText(nombre, xPos + 10, yPos + 30); // ajustar la posición del texto
+                        URL.revokeObjectURL(url);
+                    };
+                }
+            });
+
+            // Dibujar la cuadrícula
+            ctx.strokeStyle = '#ddd';
+            for (let x = 0; x <= width; x += scale) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= height; y += scale) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+        }
+
+        function saveToExcel() {
+            const worksheet = XLSX.utils.json_to_sheet(students);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Salón');
+
+            XLSX.writeFile(workbook, 'Salon.xlsx');
+        }
+
+        function loadFromExcel() {
+            const fileUpload = document.getElementById('fileUpload');
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                // Formato del JSON esperado: [[Nombre, x, y], ...]
+                jsonData.forEach(row => {
+                    if (row.length === 3) {
+                        const [nombre, x, y] = row;
+                        students.push({ nombre, x: parseInt(x), y: parseInt(y) });
+                    }
+                });
+
+                generatePlan(students);
+            };
+
+            reader.readAsArrayBuffer(fileUpload.files[0]);
+        }
+    </script>
+</body>
+</html>
